@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebUSB ADB - Không Cần Cài Đặt</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<!-- WebADB library via JsDelivr CDN -->
+<script src="https://cdn.jsdelivr.net/gh/webadb/webadb.js@master/webadb.js"></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: radial-gradient(circle at top right, #1e1b4b, #0f0f16);
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .container {
+    background: rgba(22, 22, 38, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 30px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6366f1;
+    margin-bottom: 12px;
+    margin-top: 20px;
+  }
+
+  /* Input fields */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .input-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+
+  .input-group input {
+    background: rgba(15, 15, 25, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #fff;
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Status and Badges */
+  .status-card {
+    background: rgba(10, 10, 18, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+  }
+
+  .status-row span:first-child {
+    color: #94a3b8;
+  }
+
+  .badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .badge.disconnected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+  }
+  .badge.disconnected::before { background: #ef4444; }
+
+  .badge.connected {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+  }
+  .badge.connected::before { background: #10b981; }
+
+  .badge.processing {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+  }
+  .badge.processing::before {
+    background: #f59e0b;
+    animation: pulse 1.2s infinite;
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 14px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a52e6, #8b4bf0);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    color: white;
+  }
+
+  .button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  /* Console output log */
+  .console {
+    background: #09090e;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    color: #a7f3d0;
+    max-height: 150px;
+    overflow-y: auto;
+    margin-top: 24px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .console-title {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .console-title span:last-child {
+    cursor: pointer;
+    color: #818cf8;
+  }
+
+  .console-title span:last-child:hover {
+    text-decoration: underline;
+  }
+
+  /* Browser Warning */
+  .warning-box {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Pulse animation helper */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚡ WebUSB ADB Ad Controller</h1>
+  <p class="subtitle">Thay đổi KEY_IS_ORGANIC trực tiếp từ trình duyệt</p>
+
+  <!-- Warning for non-Chromium browsers -->
+  <div class="warning-box" id="browser-warning">
+    ⚠️ <strong>Trình duyệt không hỗ trợ!</strong> WebUSB chỉ được hỗ trợ trên các trình duyệt nhân Chromium như Google Chrome, Edge, Cốc Cốc, Brave. Vui lòng chuyển đổi trình duyệt để sử dụng.
+  </div>
+
+  <div class="input-group">
+    <label for="package-input">PACKAGE NAME</label>
+    <input type="text" id="package-input" value="com.app.live.tv.score.pro" placeholder="Nhập package name ứng dụng...">
+  </div>
+
+  <div class="section-title">Trạng thái kết nối</div>
+  <div class="status-card">
+    <div class="status-row">
+      <span>Điện thoại cắm USB</span>
+      <span id="usb-badge" class="badge disconnected">Chưa kết nối</span>
+    </div>
+    <div class="status-row">
+      <span>Trạng thái ADB</span>
+      <span id="adb-badge" class="badge disconnected">Chưa thiết lập</span>
+    </div>
+  </div>
+
+  <!-- Connection control -->
+  <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" id="btn-connect" onclick="connectDevice()" style="flex: 2;">
+        🔌 Kết Nối
+      </button>
+      <button class="btn btn-danger" id="btn-disconnect" onclick="disconnectDevice()" style="flex: 1; background: linear-gradient(135deg, #475569, #334155);" disabled>
+        ❌ Ngắt
+      </button>
+    </div>
+    <button class="btn" id="btn-kill-server" onclick="killAdbServer()" style="background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 13px; padding: 10px; border-radius: 12px;">
+      💀 Tắt ADB PC (Giải Phóng Thiết Bị)
+    </button>
+  </div>
+
+  <!-- Action controls -->
+  <div class="section-title">Thao tác điều khiển</div>
+  <div class="button-group">
+    <button class="btn btn-success" id="btn-on" onclick="setOrganic(false)" disabled>
+      🟢 Hiện QC (false)
+    </button>
+    <button class="btn btn-danger" id="btn-off" onclick="setOrganic(true)" disabled>
+      🔴 Ẩn QC (true)
+    </button>
+  </div>
+
+  <!-- Console log -->
+  <div class="console-title">
+    <span>CONSLOLE TRACE</span>
+    <span onclick="clearLog()">Xóa Log</span>
+  </div>
+  <div class="console" id="console-output">Chưa có kết nối nào được khởi tạo...</div>
+</div>
+
+<script>
+  // Elements
+  const usbBadge = document.getElementById('usb-badge');
+  const adbBadge = document.getElementById('adb-badge');
+  const btnConnect = document.getElementById('btn-connect');
+  const btnDisconnect = document.getElementById('btn-disconnect');
+  const btnOn = document.getElementById('btn-on');
+  const btnOff = document.getElementById('btn-off');
+  const consoleOutput = document.getElementById('console-output');
+  const packageInput = document.getElementById('package-input');
+
+  // ADB Global Instances
+  let webusbInstance = null;
+  let adbInstance = null;
+
+  // Check browser support
+  if (!navigator.usb) {
+    document.getElementById('browser-warning').style.display = 'block';
+    btnConnect.disabled = true;
+  }
+
+  function log(msg, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    let prefix = `[${timestamp}] `;
+    if (type === 'error') prefix += '❌ ';
+    else if (type === 'success') prefix += '✅ ';
+    else if (type === 'cmd') prefix += '$ ';
+    
+    if (consoleOutput.textContent === 'Chưa có kết nối nào được khởi tạo...') {
+      consoleOutput.textContent = '';
+    }
+    consoleOutput.textContent = prefix + msg + '\n' + consoleOutput.textContent;
+  }
+
+  function clearLog() {
+    consoleOutput.textContent = 'Đã xóa lịch sử log...';
+  }
+
+  // Helper to execute command and get output
+  async function runAdbCommand(adb, cmd) {
+    log(cmd, 'cmd');
+    let shell = await adb.shell(cmd);
+    let decoder = new TextDecoder();
+    let output = "";
+    
+    let r = await shell.receive();
+    while (r.cmd === "WRTE") {
+      if (r.data != null) {
+        output += decoder.decode(r.data);
+      }
+      await shell.send("OKAY");
+      r = await shell.receive();
+    }
+    return output.trim();
+  }
+
+  // Connect via WebUSB ADB
+  async function connectDevice() {
+    btnConnect.disabled = true;
+    btnConnect.innerHTML = '<span class="spinner"></span> Đang kết nối...';
+    usbBadge.textContent = 'Đang ghép đôi...';
+    usbBadge.className = 'badge processing';
+    
+    log("Đang mở trình quản lý thiết bị USB... (Chọn điện thoại của bạn từ danh sách)");
+    
+    try {
+      // 1. Open WebUSB interface
+      webusbInstance = await Adb.open("WebUSB");
+      usbBadge.textContent = 'Đã nhận USB';
+      usbBadge.className = 'badge connected';
+      log("Nhận diện thành công cổng USB Android!");
+
+      // 2. Open ADB handshake
+      adbBadge.textContent = 'Đang bắt tay ADB...';
+      adbBadge.className = 'badge processing';
+      log("Bắt đầu handshake với thiết bị. Lưu ý nhìn màn hình điện thoại xem có yêu cầu 'Cho phép gỡ lỗi USB' không và ấn ĐỒNG Ý.");
+      
+      adbInstance = await webusbInstance.connectAdb("host::");
+      adbBadge.textContent = 'Đã kết nối';
+      adbBadge.className = 'badge connected';
+      log("Bắt tay ADB thành công! Thiết bị đã sẵn sàng.", "success");
+      
+      // Update UI state
+      btnConnect.innerHTML = '⚡ Đã Kết Nối';
+      btnDisconnect.disabled = false;
+      btnOn.disabled = false;
+      btnOff.disabled = false;
+      
+      // Get device info just to verify connection
+      try {
+        const propModel = await runAdbCommand(adbInstance, "getprop ro.product.model");
+        log(`Tên thiết bị kết nối: ${propModel || 'Thiết bị Android'}`, 'success');
+      } catch (errProp) {
+        log("Đã kết nối nhưng không lấy được tên thiết bị: " + errProp.message);
+      }
+
+    } catch (error) {
+      let errorMsg = error.message || String(error);
+      let tip = "";
+      
+      if (errorMsg.includes("claim interface") || errorMsg.includes("claim") || error.name === "NetworkError") {
+        tip = "\n💡 **Gợi ý khắc phục:** Có một tiến trình ADB khác trên máy tính của bạn (như Android Studio, VS Code hoặc công cụ ADB chạy ngầm) đang chiếm giữ độc quyền thiết bị này. Hãy bấm nút **[Tắt ADB PC]** phía trên hoặc chạy lệnh `adb kill-server` trong Terminal để giải phóng thiết bị!";
+      } else if (errorMsg.includes("security") || errorMsg.includes("SecurityError")) {
+        tip = "\n💡 **Gợi ý khắc phục:** WebUSB yêu cầu môi trường bảo mật (HTTPS hoặc localhost). Hãy chắc chắn bạn đang truy cập qua http://localhost:3456 hoặc https://";
+      }
+      
+      log("Lỗi kết nối: " + errorMsg + tip, "error");
+      
+      // Reset State on failure
+      usbBadge.textContent = 'Thất bại';
+      usbBadge.className = 'badge disconnected';
+      adbBadge.textContent = 'Chưa thiết lập';
+      adbBadge.className = 'badge disconnected';
+      btnConnect.disabled = false;
+      btnConnect.innerHTML = '🔌 Kết Nối Lại';
+      btnDisconnect.disabled = true;
+      btnOn.disabled = true;
+      btnOff.disabled = true;
+    }
+  }
+
+  // Disconnect WebUSB device
+  async function disconnectDevice() {
+    try {
+      if (webusbInstance) {
+        log("Đang ngắt kết nối và giải phóng cổng USB thiết bị...");
+        await webusbInstance.close();
+      }
+    } catch (e) {
+      log("Lỗi khi ngắt kết nối: " + e.message, "error");
+    } finally {
+      webusbInstance = null;
+      adbInstance = null;
+      
+      usbBadge.textContent = 'Chưa kết nối';
+      usbBadge.className = 'badge disconnected';
+      adbBadge.textContent = 'Chưa thiết lập';
+      adbBadge.className = 'badge disconnected';
+      
+      btnConnect.disabled = false;
+      btnConnect.innerHTML = '🔌 Kết Nối';
+      btnDisconnect.disabled = true;
+      btnOn.disabled = true;
+      btnOff.disabled = true;
+      log("Đã ngắt kết nối thành công. Thiết bị USB đã được giải phóng!", "success");
+    }
+  }
+
+  // Request server to run adb kill-server
+  async function killAdbServer() {
+    const btnKill = document.getElementById('btn-kill-server');
+    const oldText = btnKill.textContent;
+    btnKill.disabled = true;
+    btnKill.innerHTML = '<span class="spinner"></span> Đang tắt ADB PC...';
+    log("Gửi yêu cầu tắt tiến trình ADB Server chạy ngầm trên PC...");
+    
+    try {
+      const res = await fetch('/api/kill-server');
+      const data = await res.json();
+      if (data.success) {
+        log("Đã chạy lệnh 'adb kill-server' thành công trên máy tính! Cổng USB thiết bị đã được giải phóng.", "success");
+      } else {
+        log("Lỗi phản hồi từ PC Server: " + data.error, "error");
+      }
+    } catch (e) {
+      log("Không thể kết nối đến server Node.js. (Lưu ý: Tính năng tắt ADB PC chỉ chạy được khi trang này được mở dưới localhost:3456)", "error");
+    } finally {
+      btnKill.disabled = false;
+      btnKill.textContent = '💀 Tắt ADB PC (Giải Phóng Thiết Bị)';
+    }
+  }
+
+  // Set Key
+  async function setOrganic(value) {
+    if (!adbInstance) {
+      log("Không tìm thấy kết nối ADB. Vui lòng kết nối lại!", "error");
+      return;
+    }
+
+    const PKG = packageInput.value.trim();
+    if (!PKG) {
+      log("Vui lòng nhập Package Name trước khi gửi lệnh!", "error");
+      return;
+    }
+
+    const targetBtn = value ? btnOff : btnOn;
+    const originalText = targetBtn.textContent;
+    
+    // Disable buttons
+    btnOn.disabled = true;
+    btnOff.disabled = true;
+    targetBtn.innerHTML = '<span class="spinner"></span> Đang chạy...';
+
+    log(`Bắt đầu thiết lập KEY_IS_ORGANIC = ${value} cho Package: ${PKG}...`);
+
+    try {
+      // Step 1: Force stop app
+      log(`Lệnh 1: Dừng ứng dụng đang chạy...`);
+      await runAdbCommand(adbInstance, `am force-stop ${PKG}`);
+      
+      // Step 2: Write SharedPreferences xml
+      log(`Lệnh 2: Ghi đè file cấu hình preferences...`);
+      const xml = `<map><boolean name="KEY_IS_ORGANIC" value="${value}" /></map>`;
+      const PREF_PATH = `/data/data/${PKG}/shared_prefs/nkh_ad_pref.xml`;
+      
+      // Executing command in run-as mode (with mkdir -p to support freshly installed apps)
+      const adbWriteCmd = `run-as ${PKG} sh -c 'mkdir -p /data/data/${PKG}/shared_prefs && echo "${xml.replace(/"/g, '\\"')}" > ${PREF_PATH}'`;
+      const outputWrite = await runAdbCommand(adbInstance, adbWriteCmd);
+      if (outputWrite) {
+        log(`Phản hồi ghi file: ${outputWrite}`);
+      }
+
+      // Đọc lại file để xác nhận giá trị thay đổi thành công
+      log(`Đang kiểm tra dữ liệu thực tế trên ổ đĩa điện thoại...`);
+      const verifyCmd = `run-as ${PKG} cat ${PREF_PATH}`;
+      const verifyOutput = await runAdbCommand(adbInstance, verifyCmd);
+      log(`XÁC MINH FILE XML TRÊN THIẾT BỊ: ${verifyOutput}`, 'success');
+
+      // Step 3: Launch app back via target SplashActivity
+      log(`Lệnh 3: Khởi chạy lại SplashActivity...`);
+      const launchCmd = `am start -n ${PKG}/${PKG}.ui.component.splash.SplashActivity`;
+      await runAdbCommand(adbInstance, launchCmd);
+      
+      log(`Hoàn tất! Đã đổi KEY_IS_ORGANIC = ${value} thành công. Hãy kiểm tra quảng cáo trên thiết bị!`, 'success');
+
+    } catch (e) {
+      log(`Có lỗi xảy ra: ${e.message}`, 'error');
+      log(`Mẹo khắc phục: Đảm bảo App có package name "${PKG}" đã được cài bản DEBUG (hoặc debuggable) trên điện thoại và điện thoại đã bật cho phép run-as.`);
+    } finally {
+      // Restore UI
+      btnOn.disabled = false;
+      btnOff.disabled = false;
+      btnOn.innerHTML = '🟢 Hiện QC (false)';
+      btnOff.innerHTML = '🔴 Ẩn QC (true)';
+    }
+  }
+</script>
+
+</body>
+</html>

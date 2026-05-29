@@ -663,6 +663,10 @@
       await updateDeviceList();
       // Select the newly paired device
       usbDeviceSelect.value = pairedDevices.length - 1;
+      
+      // Automatically connect to the newly paired device
+      log("Đang tự động bắt đầu kết nối đến thiết bị...");
+      connectDevice();
     } catch (e) {
       log("Ghép đôi thất bại: " + e.message, "error");
     }

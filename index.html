@@ -346,6 +346,9 @@
       🔴 Ẩn QC (true)
     </button>
   </div>
+  <button class="btn btn-warning" id="btn-clear-data" onclick="clearAppData()" style="margin-top: 12px; background: linear-gradient(135deg, #d97706, #f59e0b); color: white;" disabled>
+    🗑️ Xóa Sạch Dữ Liệu App (pm clear)
+  </button>
 
   <!-- Console log -->
   <div class="console-title">
@@ -364,6 +367,7 @@
   const btnKillServer = document.getElementById('btn-kill-server');
   const btnOn = document.getElementById('btn-on');
   const btnOff = document.getElementById('btn-off');
+  const btnClearData = document.getElementById('btn-clear-data');
   const consoleOutput = document.getElementById('console-output');
   const packageInput = document.getElementById('package-input');
 
@@ -472,6 +476,7 @@
     btnDisconnect.disabled = true;
     btnOn.disabled = true;
     btnOff.disabled = true;
+    btnClearData.disabled = true;
   }
 
   // Disconnect WebUSB
@@ -506,11 +511,13 @@
         adbBadge.className = 'badge connected';
         btnOn.disabled = false;
         btnOff.disabled = false;
+        btnClearData.disabled = false;
       } else {
         adbBadge.textContent = 'Không có thiết bị cắm PC';
         adbBadge.className = 'badge disconnected';
         btnOn.disabled = true;
         btnOff.disabled = true;
+        btnClearData.disabled = true;
       }
     } catch (e) {
       usbBadge.textContent = 'Server Offline';
@@ -519,6 +526,7 @@
       adbBadge.className = 'badge disconnected';
       btnOn.disabled = true;
       btnOff.disabled = true;
+      btnClearData.disabled = true;
     }
   }
 
@@ -545,6 +553,7 @@
     // Disable buttons
     btnOn.disabled = true;
     btnOff.disabled = true;
+    btnClearData.disabled = true;
     
     log(`[Server] Đang thiết lập KEY_IS_ORGANIC = ${value} cho Package: ${PKG}...`);
     try {
@@ -560,6 +569,7 @@
     } finally {
       btnOn.disabled = false;
       btnOff.disabled = false;
+      btnClearData.disabled = false;
       checkServerStatus();
     }
   }
@@ -615,6 +625,7 @@
       btnDisconnect.disabled = false;
       btnOn.disabled = false;
       btnOff.disabled = false;
+      btnClearData.disabled = false;
       
       // Get device info just to verify connection
       try {
@@ -646,6 +657,7 @@
       btnDisconnect.disabled = true;
       btnOn.disabled = true;
       btnOff.disabled = true;
+      btnClearData.disabled = true;
     }
   }
 
@@ -707,6 +719,7 @@
     // Disable buttons
     btnOn.disabled = true;
     btnOff.disabled = true;
+    btnClearData.disabled = true;
     targetBtn.innerHTML = '<span class="spinner"></span> Đang chạy...';
 
     log(`Bắt đầu thiết lập KEY_IS_ORGANIC = ${value} cho Package: ${PKG}...`);
@@ -748,8 +761,92 @@
       // Restore UI
       btnOn.disabled = false;
       btnOff.disabled = false;
+      btnClearData.disabled = false;
       btnOn.innerHTML = '🟢 Hiện QC (false)';
       btnOff.innerHTML = '🔴 Ẩn QC (true)';
+    }
+  }
+
+  // Clear app data entry point
+  async function clearAppData() {
+    if (activeMode === 'server') {
+      await clearAppDataViaServer();
+    } else {
+      await clearAppDataViaWebUsb();
+    }
+  }
+
+  // Clear app data via local server
+  async function clearAppDataViaServer() {
+    const PKG = packageInput.value.trim();
+    if (!PKG) {
+      log("Vui lòng nhập Package Name!", "error");
+      return;
+    }
+
+    if (!confirm(`⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH DỮ LIỆU ứng dụng ${PKG}? Thao tác này sẽ reset app hoàn toàn.`)) {
+      return;
+    }
+
+    btnClearData.disabled = true;
+    btnOn.disabled = true;
+    btnOff.disabled = true;
+    btnClearData.innerHTML = '<span class="spinner"></span> Đang xóa data...';
+
+    log(`[Server] Gửi yêu cầu pm clear cho ${PKG}...`);
+    try {
+      const res = await fetch(`http://localhost:3456/api/clear?packageName=${PKG}`);
+      const data = await res.json();
+      if (data.success) {
+        log(`[Server] Đã xóa sạch dữ liệu ứng dụng thành công!`, 'success');
+      } else {
+        log(`[Server] Lỗi từ server: ${data.error}`, 'error');
+      }
+    } catch (e) {
+      log(`[Server] Lỗi kết nối: ${e.message}`, 'error');
+    } finally {
+      btnClearData.disabled = false;
+      btnOn.disabled = false;
+      btnOff.disabled = false;
+      btnClearData.innerHTML = '🗑️ Xóa Sạch Dữ Liệu App (pm clear)';
+      checkServerStatus();
+    }
+  }
+
+  // Clear app data via WebUSB
+  async function clearAppDataViaWebUsb() {
+    if (!adbInstance) {
+      log("Không tìm thấy kết nối ADB. Vui lòng kết nối lại!", "error");
+      return;
+    }
+
+    const PKG = packageInput.value.trim();
+    if (!PKG) {
+      log("Vui lòng nhập Package Name!", "error");
+      return;
+    }
+
+    if (!confirm(`⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA SẠCH DỮ LIỆU ứng dụng ${PKG}? Thao tác này sẽ reset app hoàn toàn.`)) {
+      return;
+    }
+
+    btnClearData.disabled = true;
+    btnOn.disabled = true;
+    btnOff.disabled = true;
+    btnClearData.innerHTML = '<span class="spinner"></span> Đang xóa data...';
+
+    log(`Bắt đầu chạy pm clear cho ${PKG} qua WebUSB...`);
+    try {
+      const output = await runAdbCommand(adbInstance, `pm clear ${PKG}`);
+      log(`Phản hồi thiết bị: ${output}`, 'success');
+      log(`Đã xóa sạch dữ liệu ứng dụng thành công!`, 'success');
+    } catch (e) {
+      log(`Lỗi khi xóa dữ liệu: ${e.message}`, 'error');
+    } finally {
+      btnClearData.disabled = false;
+      btnOn.disabled = false;
+      btnOff.disabled = false;
+      btnClearData.innerHTML = '🗑️ Xóa Sạch Dữ Liệu App (pm clear)';
     }
   }
 

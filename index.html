@@ -325,6 +325,9 @@
       <button class="btn btn-primary" id="btn-add-device" onclick="addUsbDevice()" style="width: auto; padding: 0 16px; font-size: 13px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); flex-shrink: 0; margin-top: 0;">
         ➕ Ghép Đôi
       </button>
+      <button class="btn" id="btn-forget-device" onclick="forgetUsbDevice()" style="width: auto; padding: 0 16px; font-size: 13px; border-radius: 12px; background: #27272a; color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); flex-shrink: 0; margin-top: 0;" title="Xóa thiết bị đã chọn">
+        🗑️ Xóa
+      </button>
     </div>
   </div>
 
@@ -669,6 +672,33 @@
       connectDevice();
     } catch (e) {
       log("Ghép đôi thất bại: " + e.message, "error");
+    }
+  }
+
+  // Revoke permission for a USB device
+  async function forgetUsbDevice() {
+    const deviceIndex = usbDeviceSelect.value;
+    if (deviceIndex === "") {
+      log("Vui lòng chọn một thiết bị để xóa!", "error");
+      return;
+    }
+    const selectedDevice = pairedDevices[deviceIndex];
+    if (!selectedDevice) return;
+    
+    if (confirm(`Bạn có chắc muốn xóa (forget) thiết bị: ${selectedDevice.productName || 'Android Device'}?`)) {
+      try {
+        log(`Đang xóa thiết bị: ${selectedDevice.productName || 'Android Device'}...`);
+        // Disconnect if we are currently connected to this device
+        if (webusbInstance && webusbInstance.device === selectedDevice) {
+          await disconnectWebUsb();
+          resetUsbUI();
+        }
+        await selectedDevice.forget();
+        log("Đã xóa thiết bị thành công!", "success");
+        await updateDeviceList();
+      } catch (e) {
+        log("Lỗi khi xóa thiết bị: " + e.message, "error");
+      }
     }
   }
 

@@ -596,7 +596,11 @@
       if (data.success) {
         log(`[Server] Đã thay đổi thành công! Phản hồi: ${data.organic}`, 'success');
       } else {
-        log(`[Server] Gặp lỗi: ${data.error}`, 'error');
+        let errorMsg = data.error || "Lỗi không xác định";
+        if (errorMsg.includes("not debuggable")) {
+          errorMsg += "\n💡 **Lý do:** Bạn đang cài bản Release (hoặc bản từ Play Store). Chức năng này yêu cầu dùng lệnh `run-as` và CHỈ HOẠT ĐỘNG VỚI BẢN DEBUG. Vui lòng build và cài lại file `app-debug.apk` từ Android Studio!";
+        }
+        log(`[Server] Gặp lỗi: ${errorMsg}`, 'error');
       }
     } catch (e) {
       log(`[Server] Lỗi kết nối server: ${e.message}`, 'error');

@@ -1035,15 +1035,65 @@
     
     <div style="font-size: 14px; line-height: 1.6; color: #cbd5e1; display: flex; flex-direction: column; gap: 20px;">
       
+      <!-- Prerequisite: Install ADB -->
+      <div>
+        <div style="font-weight: 600; color: #10b981; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">⚙️ Bước 0: Cài đặt ADB (Bắt buộc)</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 10px;">
+          Cả Cách 1 và Cách 2 đều yêu cầu máy tính phải cài <strong>ADB (Android Debug Bridge)</strong>. Nếu chưa có, hãy cài theo hướng dẫn bên dưới:
+        </p>
+
+        <!-- Windows -->
+        <div style="background: rgba(15, 15, 25, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;">
+          <div style="font-weight: 600; color: #60a5fa; font-size: 12px; margin-bottom: 6px;">🪟 Windows</div>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.7; margin: 0;">
+            <strong>Cách nhanh nhất (Bằng winget):</strong><br>
+            Mở <strong>PowerShell</strong> hoặc <strong>CMD</strong>, paste lệnh này:<br>
+          </p>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 28px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #a7f3d0; font-family: monospace; font-size: 11px; padding: 6px; resize: none; outline: none; cursor: pointer; margin: 6px 0;">winget install Google.PlatformTools</textarea>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.7; margin: 0;">
+            <strong>Hoặc tải thủ công:</strong><br>
+            1. Tải <a href="https://dl.google.com/android/repository/platform-tools-latest-windows.zip" style="color: #818cf8; text-decoration: underline; font-weight: 600;" target="_blank">platform-tools-latest-windows.zip</a><br>
+            2. Giải nén ra thư mục, ví dụ: <code style="background: #09090f; padding: 2px 6px; border-radius: 4px; font-size: 11px;">C:\platform-tools</code><br>
+            3. Thêm đường dẫn thư mục vào <strong>System PATH</strong>:<br>
+            &nbsp;&nbsp;→ Tìm "Edit the system environment variables" → Environment Variables → Path → New → Dán đường dẫn thư mục.<br>
+            4. Mở CMD mới, gõ <code style="background: #09090f; padding: 2px 6px; border-radius: 4px; font-size: 11px;">adb version</code> để kiểm tra.
+          </p>
+        </div>
+
+        <!-- macOS -->
+        <div style="background: rgba(15, 15, 25, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;">
+          <div style="font-weight: 600; color: #c084fc; font-size: 12px; margin-bottom: 6px;">🍎 macOS</div>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.7; margin: 0;">
+            Cài qua Homebrew (mở Terminal):
+          </p>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 28px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #a7f3d0; font-family: monospace; font-size: 11px; padding: 6px; resize: none; outline: none; cursor: pointer; margin: 6px 0;">brew install android-platform-tools</textarea>
+        </div>
+
+        <!-- Linux -->
+        <div style="background: rgba(15, 15, 25, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px;">
+          <div style="font-weight: 600; color: #f59e0b; font-size: 12px; margin-bottom: 6px;">🐧 Linux (Ubuntu/Debian)</div>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.7; margin: 0;">
+            Cài qua apt:
+          </p>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 28px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #a7f3d0; font-family: monospace; font-size: 11px; padding: 6px; resize: none; outline: none; cursor: pointer; margin: 6px 0;">sudo apt install android-tools-adb</textarea>
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; margin-top: 8px; font-style: italic;">
+          ✅ Sau khi cài xong, cắm điện thoại qua USB, bật <strong>USB Debugging</strong> trong Developer Options, rồi chạy <code style="background: #09090f; padding: 2px 6px; border-radius: 4px; font-size: 11px;">adb devices</code> để xác minh thiết bị đã được nhận.
+        </p>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 0;">
+
       <!-- Option 1: Node.js server -->
       <div>
         <div style="font-weight: 600; color: #818cf8; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Cách 1: Chạy Local Node.js Server (Bằng Script tự động)</div>
         <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
-          1. Máy tính cần cài sẵn <strong>Node.js</strong>.<br>
+          1. Máy tính cần cài sẵn <strong>Node.js</strong> và <strong>ADB</strong> (xem Bước 0 ở trên).<br>
           2. Tải script tự động khởi động (script sẽ tự tải file server.js):<br>
           👉 <a href="./start_server.sh" download style="color: #818cf8; text-decoration: underline; font-weight: 600;">start_server.sh (Dành cho macOS / Linux)</a><br>
           👉 <a href="./start_server.bat" download style="color: #818cf8; text-decoration: underline; font-weight: 600;">start_server.bat (Dành cho Windows)</a><br>
-          3. Chạy script vừa tải về (Mac: Chạy lệnh `sh start_server.sh` trong Terminal; Windows: Double-click vào file `.bat`).<br>
+          3. Chạy script vừa tải về (Mac: Chạy lệnh <code style="background: #09090f; padding: 2px 6px; border-radius: 4px; font-size: 11px;">sh start_server.sh</code> trong Terminal; Windows: Double-click vào file <code style="background: #09090f; padding: 2px 6px; border-radius: 4px; font-size: 11px;">.bat</code>).<br>
           4. Nhập IP máy tính của bạn vào ô <strong>Local Server URL</strong> trên trình duyệt.
         </p>
       </div>
@@ -1057,12 +1107,12 @@
         
         <div style="margin-top: 10px;">
           <span style="font-size: 11px; font-weight: 600; color: #34d399; display: block; margin-bottom: 2px;">🟢 Hiện quảng cáo (KEY_IS_ORGANIC = false):</span>
-          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"false\\\" /&gt;&lt;/map&gt;\" &gt; /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"false\\\" /&gt;&lt;/map&gt;\" > /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
         </div>
 
         <div style="margin-top: 12px;">
           <span style="font-size: 11px; font-weight: 600; color: #f87171; display: block; margin-bottom: 2px;">🔴 Ẩn quảng cáo (KEY_IS_ORGANIC = true):</span>
-          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"true\\\" /&gt;&lt;/map&gt;\" &gt; /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"true\\\" /&gt;&lt;/map&gt;\" > /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
         </div>
       </div>
 

@@ -667,8 +667,9 @@
       // Select the newly paired device
       usbDeviceSelect.value = pairedDevices.length - 1;
       
-      // Automatically connect to the newly paired device
-      log("Đang tự động bắt đầu kết nối đến thiết bị...");
+      // Wait for browser to finish internal USB state transition before connecting
+      log("Đợi thiết bị sẵn sàng...");
+      await new Promise(resolve => setTimeout(resolve, 800));
       connectDevice();
     } catch (e) {
       log("Ghép đôi thất bại: " + e.message, "error");
@@ -702,6 +703,28 @@
     }
   }
 
+  // Helper: safely open a USB device with retry
+  async function safeOpenDevice(device, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        // Close first if it was left open from a previous attempt
+        if (device.opened) {
+          try { await device.close(); } catch (e) {}
+          await new Promise(r => setTimeout(r, 300));
+        }
+        await device.open();
+        return; // success
+      } catch (err) {
+        if (err.message && err.message.includes("in progress") && i < retries - 1) {
+          log(`Thiết bị đang bận, thử lại sau 1 giây... (lần ${i + 2}/${retries})`);
+          await new Promise(r => setTimeout(r, 1000));
+        } else {
+          throw err; // rethrow on last attempt or unknown error
+        }
+      }
+    }
+  }
+
   // Connect via WebUSB ADB (Uses the selected device from dropdown list)
   async function connectDevice() {
     const deviceIndex = usbDeviceSelect.value;
@@ -727,8 +750,8 @@
       // 1. Close existing instance if any
       await disconnectWebUsb();
 
-      // 2. Open selected USB device
-      await selectedDevice.open();
+      // 2. Open selected USB device (with retry for "in progress" errors)
+      await safeOpenDevice(selectedDevice);
       if (selectedDevice.configuration === null) {
         await selectedDevice.selectConfiguration(1);
       }
@@ -772,6 +795,8 @@
         tip = "\n💡 **Gợi ý khắc phục:** Có một tiến trình ADB khác trên máy tính của bạn (như Android Studio, VS Code hoặc công cụ ADB chạy ngầm) đang chiếm giữ độc quyền thiết bị này. Hãy bấm nút **[Tắt ADB PC]** phía trên hoặc chạy lệnh `adb kill-server` trong Terminal để giải phóng thiết bị!";
       } else if (errorMsg.includes("security") || errorMsg.includes("SecurityError")) {
         tip = "\n💡 **Gợi ý khắc phục:** WebUSB yêu cầu môi trường bảo mật (HTTPS hoặc localhost). Hãy chắc chắn bạn đang truy cập qua http://localhost:3456 hoặc https://";
+      } else if (errorMsg.includes("in progress")) {
+        tip = "\n💡 **Gợi ý khắc phục:** Thiết bị USB đang bận xử lý thao tác trước đó. Hãy rút cáp USB ra, cắm lại, đợi 3 giây rồi bấm Kết Nối.";
       }
       
       log("Lỗi kết nối: " + errorMsg + tip, "error");

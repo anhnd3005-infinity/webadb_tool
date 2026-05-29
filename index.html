@@ -302,6 +302,11 @@
     <input type="text" id="package-input" value="com.app.live.tv.score.pro" placeholder="Nhập package name ứng dụng...">
   </div>
 
+  <div class="input-group" id="server-url-group" style="display: none;">
+    <label for="server-url-input">LOCAL SERVER URL</label>
+    <input type="text" id="server-url-input" value="http://localhost:3456" placeholder="http://192.168.1.x:3456">
+  </div>
+
   <!-- Mode Selector -->
   <div class="mode-container" style="display: flex; background: rgba(10, 10, 18, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.05);">
     <button id="mode-usb-btn" onclick="switchMode('usb')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: none; border-radius: 9px; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-family: inherit;">🔌 WebUSB Mode (Default)</button>
@@ -369,6 +374,8 @@
   const btnClearData = document.getElementById('btn-clear-data');
   const consoleOutput = document.getElementById('console-output');
   const packageInput = document.getElementById('package-input');
+  const serverUrlInput = document.getElementById('server-url-input');
+  const serverUrlGroup = document.getElementById('server-url-group');
 
   const modeUsbBtn = document.getElementById('mode-usb-btn');
   const modeServerBtn = document.getElementById('mode-server-btn');
@@ -432,6 +439,7 @@
       btnConnect.style.display = 'flex';
       btnDisconnect.style.display = 'flex';
       btnKillServer.style.display = 'flex';
+      serverUrlGroup.style.display = 'none';
 
       // Stop server checker
       stopServerChecking();
@@ -454,11 +462,13 @@
       btnConnect.style.display = 'none';
       btnDisconnect.style.display = 'none';
       btnKillServer.style.display = 'none';
+      serverUrlGroup.style.display = 'flex';
 
       // Disconnect WebUSB if active
       disconnectWebUsb();
 
-      log("Đã chuyển sang chế độ Local Server Mode (http://localhost:3456).");
+      const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3456';
+      log("Đã chuyển sang chế độ Local Server Mode (" + serverUrl + ").");
       // Start server status checker
       startServerChecking();
     }
@@ -498,8 +508,9 @@
   // ==========================================
   async function checkServerStatus() {
     const PKG = packageInput.value.trim();
+    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3456';
     try {
-      const res = await fetch(`http://localhost:3456/api/status?packageName=${PKG}`);
+      const res = await fetch(`${serverUrl}/api/status?packageName=${PKG}`);
       const data = await res.json();
       
       usbBadge.textContent = 'Server Online';
@@ -554,9 +565,10 @@
     btnOff.disabled = true;
     btnClearData.disabled = true;
     
+    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3456';
     log(`[Server] Đang thiết lập KEY_IS_ORGANIC = ${value} cho Package: ${PKG}...`);
     try {
-      const res = await fetch(`http://localhost:3456/api/set?organic=${value}&packageName=${PKG}`);
+      const res = await fetch(`${serverUrl}/api/set?organic=${value}&packageName=${PKG}`);
       const data = await res.json();
       if (data.success) {
         log(`[Server] Đã thay đổi thành công! Phản hồi: ${data.organic}`, 'success');
@@ -675,8 +687,9 @@
     btnKill.innerHTML = '<span class="spinner"></span> Đang tắt ADB PC...';
     log("Gửi yêu cầu tắt tiến trình ADB Server chạy ngầm trên PC...");
     
+    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3456';
     try {
-      const res = await fetch('http://localhost:3456/api/kill-server');
+      const res = await fetch(`${serverUrl}/api/kill-server`);
       const data = await res.json();
       if (data.success) {
         log("Đã chạy lệnh 'adb kill-server' thành công trên máy tính! Cổng USB thiết bị đã được giải phóng.", "success");
@@ -684,7 +697,7 @@
         log("Lỗi phản hồi từ PC Server: " + data.error, "error");
       }
     } catch (e) {
-      log("Không thể kết nối đến server Node.js. (Lưu ý: Tính năng tắt ADB PC chỉ chạy được khi server Node.js localhost:3456 đang chạy)", "error");
+      log("Không thể kết nối đến server Node.js. (Lưu ý: Tính năng tắt ADB PC chỉ chạy được khi server Node.js đang chạy tại " + serverUrl + ")", "error");
     } finally {
       btnKill.disabled = false;
       btnKill.textContent = '💀 Tắt ADB PC (Giải Phóng Thiết Bị)';
@@ -792,9 +805,10 @@
     btnOff.disabled = true;
     btnClearData.innerHTML = '<span class="spinner"></span> Đang xóa data...';
 
+    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3456';
     log(`[Server] Gửi yêu cầu pm clear cho ${PKG}...`);
     try {
-      const res = await fetch(`http://localhost:3456/api/clear?packageName=${PKG}`);
+      const res = await fetch(`${serverUrl}/api/clear?packageName=${PKG}`);
       const data = await res.json();
       if (data.success) {
         log(`[Server] Đã xóa sạch dữ liệu ứng dụng thành công!`, 'success');
@@ -848,6 +862,17 @@
       btnClearData.innerHTML = '🗑️ Xóa Sạch Dữ Liệu App (pm clear)';
     }
   }
+
+  // Load saved server URL
+  if (localStorage.getItem('adb_server_url')) {
+    serverUrlInput.value = localStorage.getItem('adb_server_url');
+  }
+  serverUrlInput.addEventListener('change', () => {
+    localStorage.setItem('adb_server_url', serverUrlInput.value.trim());
+    if (activeMode === 'server') {
+      startServerChecking(); // Restart checking with new URL
+    }
+  });
 
   // Initialize page in WebUSB Mode by default
   switchMode('usb');

@@ -316,6 +316,18 @@
     <button id="mode-server-btn" onclick="switchMode('server')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: none; border-radius: 9px; cursor: pointer; transition: all 0.2s; background: transparent; color: #94a3b8; font-family: inherit;">🖥️ Local Server Mode</button>
   </div>
 
+  <div class="input-group" id="usb-device-select-group">
+    <label for="usb-device-select">THIẾT BỊ USB ĐÃ GHÉP ĐÔI</label>
+    <div style="display: flex; gap: 10px;">
+      <select id="usb-device-select" style="flex: 1; background: rgba(15, 15, 25, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 16px; color: #fff; font-family: inherit; font-size: 14px; outline: none; transition: all 0.2s; -webkit-appearance: none;">
+        <option value="">Chưa có thiết bị nào...</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-device" onclick="addUsbDevice()" style="width: auto; padding: 0 16px; font-size: 13px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); flex-shrink: 0; margin-top: 0;">
+        ➕ Ghép Đôi
+      </button>
+    </div>
+  </div>
+
   <div class="section-title" id="conn-title">Trạng thái kết nối</div>
   <div class="status-card">
     <div class="status-row">
@@ -329,7 +341,7 @@
   </div>
 
   <!-- Connection control -->
-  <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+  <div id="connection-controls" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
     <div style="display: flex; gap: 10px;">
       <button class="btn btn-primary" id="btn-connect" onclick="connectDevice()" style="flex: 2;">
         🔌 Kết Nối
@@ -379,6 +391,8 @@
   const packageInput = document.getElementById('package-input');
   const serverUrlInput = document.getElementById('server-url-input');
   const serverUrlGroup = document.getElementById('server-url-group');
+  const usbDeviceSelect = document.getElementById('usb-device-select');
+  const usbDeviceSelectGroup = document.getElementById('usb-device-select-group');
 
   const modeUsbBtn = document.getElementById('mode-usb-btn');
   const modeServerBtn = document.getElementById('mode-server-btn');
@@ -390,6 +404,7 @@
   let webusbInstance = null;
   let adbInstance = null;
   let serverStatusInterval = null;
+  let pairedDevices = [];
 
   // Check browser support
   if (!navigator.usb) {
@@ -443,6 +458,7 @@
       btnDisconnect.style.display = 'flex';
       btnKillServer.style.display = 'flex';
       serverUrlGroup.style.display = 'none';
+      usbDeviceSelectGroup.style.display = 'flex';
 
       // Stop server checker
       stopServerChecking();
@@ -466,6 +482,7 @@
       btnDisconnect.style.display = 'none';
       btnKillServer.style.display = 'none';
       serverUrlGroup.style.display = 'flex';
+      usbDeviceSelectGroup.style.display = 'none';
 
       // Disconnect WebUSB if active
       disconnectWebUsb();
@@ -608,28 +625,92 @@
     return output.trim();
   }
 
-  // Connect via WebUSB ADB
+  // List already paired USB devices
+  async function updateDeviceList() {
+    if (!navigator.usb) return;
+    try {
+      pairedDevices = await navigator.usb.getDevices();
+      usbDeviceSelect.innerHTML = '';
+      
+      if (pairedDevices.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "Chưa ghép đôi thiết bị nào...";
+        usbDeviceSelect.appendChild(opt);
+        btnConnect.disabled = true;
+      } else {
+        pairedDevices.forEach((device, index) => {
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.textContent = `${device.productName || 'Android Device'} (${device.serialNumber || 'No Serial'})`;
+          usbDeviceSelect.appendChild(opt);
+        });
+        if (!webusbInstance) {
+          btnConnect.disabled = false;
+        }
+      }
+    } catch (e) {
+      log("Lỗi khi tải danh sách thiết bị USB: " + e.message, "error");
+    }
+  }
+
+  // Request browser pairing dialog to add a device
+  async function addUsbDevice() {
+    log("Đang mở hộp thoại quét USB... Hãy chọn thiết bị của bạn.");
+    try {
+      const device = await navigator.usb.requestDevice({ filters: [] });
+      log(`Đã ghép đôi thành công thiết bị: ${device.productName || 'Android Device'}`, "success");
+      await updateDeviceList();
+      // Select the newly paired device
+      usbDeviceSelect.value = pairedDevices.length - 1;
+    } catch (e) {
+      log("Ghép đôi thất bại: " + e.message, "error");
+    }
+  }
+
+  // Connect via WebUSB ADB (Uses the selected device from dropdown list)
   async function connectDevice() {
+    const deviceIndex = usbDeviceSelect.value;
+    if (deviceIndex === "") {
+      log("Vui lòng ghép đôi một thiết bị trước!", "error");
+      return;
+    }
+
+    const selectedDevice = pairedDevices[deviceIndex];
+    if (!selectedDevice) {
+      log("Không tìm thấy thiết bị được chọn!", "error");
+      return;
+    }
+
     btnConnect.disabled = true;
     btnConnect.innerHTML = '<span class="spinner"></span> Đang kết nối...';
-    usbBadge.textContent = 'Đang ghép đôi...';
+    usbBadge.textContent = 'Đang kết nối...';
     usbBadge.className = 'badge processing';
     
-    log("Đang mở trình quản lý thiết bị USB... (Chọn điện thoại của bạn từ danh sách)");
+    log(`Bắt đầu kết nối đến thiết bị: ${selectedDevice.productName || 'Android Device'}...`);
     
     try {
-      // 1. Open WebUSB interface
-      webusbInstance = await Adb.open("WebUSB");
-      usbBadge.textContent = 'Đã nhận USB';
-      usbBadge.className = 'badge connected';
-      log("Nhận diện thành công cổng USB Android!");
+      // 1. Close existing instance if any
+      await disconnectWebUsb();
 
-      // 2. Open ADB handshake
+      // 2. Open selected USB device
+      await selectedDevice.open();
+      if (selectedDevice.configuration === null) {
+        await selectedDevice.selectConfiguration(1);
+      }
+
+      // 3. Create WebUSB transport and connect
+      const transport = new Adb.WebUSB.Transport(selectedDevice);
+      webusbInstance = transport;
+
       adbBadge.textContent = 'Đang bắt tay ADB...';
       adbBadge.className = 'badge processing';
-      log("Bắt đầu handshake với thiết bị. Lưu ý nhìn màn hình điện thoại xem có yêu cầu 'Cho phép gỡ lỗi USB' không và ấn ĐỒNG Ý.");
+      log("Bắt đầu handshake ADB. Hãy bấm 'Đồng ý / Cho phép gỡ lỗi USB' trên màn hình điện thoại.");
       
       adbInstance = await webusbInstance.connectAdb("host::");
+      
+      usbBadge.textContent = 'Đã nhận USB';
+      usbBadge.className = 'badge connected';
       adbBadge.textContent = 'Đã kết nối';
       adbBadge.className = 'badge connected';
       log("Bắt tay ADB thành công! Thiết bị đã sẵn sàng.", "success");
@@ -662,16 +743,7 @@
       log("Lỗi kết nối: " + errorMsg + tip, "error");
       
       // Reset State on failure
-      usbBadge.textContent = 'Thất bại';
-      usbBadge.className = 'badge disconnected';
-      adbBadge.textContent = 'Chưa thiết lập';
-      adbBadge.className = 'badge disconnected';
-      btnConnect.disabled = false;
-      btnConnect.innerHTML = '🔌 Kết Nối Lại';
-      btnDisconnect.disabled = true;
-      btnOn.disabled = true;
-      btnOff.disabled = true;
-      btnClearData.disabled = true;
+      resetUsbUI();
     }
   }
 
@@ -882,6 +954,13 @@
     if (modal) {
       modal.style.display = show ? 'flex' : 'none';
     }
+  }
+
+  // Listen for USB connection changes
+  if (navigator.usb) {
+    navigator.usb.addEventListener('connect', updateDeviceList);
+    navigator.usb.addEventListener('disconnect', updateDeviceList);
+    updateDeviceList(); // Populate list on load
   }
 
   // Initialize page in WebUSB Mode by default

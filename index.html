@@ -899,12 +899,13 @@
       
       <!-- Option 1: Node.js server -->
       <div>
-        <div style="font-weight: 600; color: #818cf8; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Cách 1: Chạy Local Node.js Server</div>
-        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
-          1. Máy tính cần cài sẵn <strong>Node.js</strong> và <strong>ADB</strong>.<br>
-          2. <a href="./server.js" download style="color: #818cf8; text-decoration: underline; font-weight: 500;">Tải file server.js</a> và lưu vào máy.<br>
-          3. Mở Terminal tại thư mục đó và chạy:<br>
-          <code style="display: block; background: #09090f; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 11px; color: #a7f3d0; margin-top: 4px; border: 1px solid rgba(255,255,255,0.03); white-space: pre-wrap; word-break: break-all;">node server.js com.app.live.tv.score.pro</code>
+        <div style="font-weight: 600; color: #818cf8; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Cách 1: Chạy Local Node.js Server (Bằng Script tự động)</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+          1. Máy tính cần cài sẵn <strong>Node.js</strong>.<br>
+          2. Tải script tự động khởi động (script sẽ tự tải file server.js):<br>
+          👉 <a href="./start_server.sh" download style="color: #818cf8; text-decoration: underline; font-weight: 600;">start_server.sh (Dành cho macOS / Linux)</a><br>
+          👉 <a href="./start_server.bat" download style="color: #818cf8; text-decoration: underline; font-weight: 600;">start_server.bat (Dành cho Windows)</a><br>
+          3. Chạy script vừa tải về (Mac: Chạy lệnh `sh start_server.sh` trong Terminal; Windows: Double-click vào file `.bat`).<br>
           4. Nhập IP máy tính của bạn vào ô <strong>Local Server URL</strong> trên trình duyệt.
         </p>
       </div>

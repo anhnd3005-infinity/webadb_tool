@@ -947,7 +947,12 @@
       if (data.success) {
         log(`[Server] Đã xóa sạch dữ liệu ứng dụng thành công!`, 'success');
       } else {
-        log(`[Server] Lỗi từ server: ${data.error}`, 'error');
+        let errorMsg = data.error || "Lỗi không xác định";
+        let tip = "";
+        if (errorMsg.includes("CLEAR_APP_USER_DATA") || errorMsg.includes("SecurityException")) {
+          tip = "\n💡 **Gợi ý khắc phục (đặc biệt trên Xiaomi, Poco, Oppo, Realme):** Bạn cần vào **Tùy chọn nhà phát triển (Developer Options)** trên điện thoại, tìm và BẬT mục **'Gỡ lỗi USB (Cài đặt bảo mật)' / 'USB debugging (Security settings)'** hoặc **'Tắt theo dõi quyền' / 'Disable permission monitoring'** thì mới có quyền xóa data app qua ADB.";
+        }
+        log(`[Server] Lỗi từ server: ${errorMsg}${tip}`, 'error');
       }
     } catch (e) {
       log(`[Server] Lỗi kết nối: ${e.message}`, 'error');

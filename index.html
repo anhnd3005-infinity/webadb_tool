@@ -305,6 +305,9 @@
   <div class="input-group" id="server-url-group" style="display: none;">
     <label for="server-url-input">LOCAL SERVER URL</label>
     <input type="text" id="server-url-input" value="http://localhost:3456" placeholder="http://192.168.1.x:3456">
+    <button onclick="toggleGuideModal(true)" style="background: transparent; border: none; color: #818cf8; text-align: left; font-size: 11px; margin-top: 6px; cursor: pointer; text-decoration: underline; font-family: inherit; font-weight: 500; outline: none; width: fit-content; padding: 2px 0;">
+      ❓ Hướng dẫn cài đặt & chạy Local Server
+    </button>
   </div>
 
   <!-- Mode Selector -->
@@ -874,9 +877,50 @@
     }
   });
 
+  function toggleGuideModal(show) {
+    const modal = document.getElementById('guide-modal');
+    if (modal) {
+      modal.style.display = show ? 'flex' : 'none';
+    }
+  }
+
   // Initialize page in WebUSB Mode by default
   switchMode('usb');
 </script>
+
+<!-- Modal Hướng Dẫn Cài Đặt -->
+<div id="guide-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: #161626; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; width: 100%; max-width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; position: relative; color: #e2e8f0; font-family: sans-serif;">
+    <button onclick="toggleGuideModal(false)" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: all 0.2s;">✕</button>
+    
+    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🖥️ Hướng dẫn cài đặt Local Server</h2>
+    
+    <div style="font-size: 14px; line-height: 1.6; color: #cbd5e1; display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <strong>Bước 1: Cài đặt Node.js & ADB</strong>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Máy tính chạy server cần cài sẵn Node.js (tải từ <a href="https://nodejs.org/" target="_blank" style="color: #818cf8;">nodejs.org</a>) và Android SDK/ADB.</p>
+      </div>
+
+      <div>
+        <strong>Bước 2: Tải file server</strong>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Tải script <a href="https://raw.githubusercontent.com/anhnd3005-infinity/webadb_tool/main/server.js" target="_blank" style="color: #818cf8; text-decoration: underline;">server.js</a> về máy tính và lưu vào một thư mục.</p>
+      </div>
+
+      <div>
+        <strong>Bước 3: Khởi động server</strong>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Mở Terminal (hoặc CMD) tại thư mục chứa file `server.js` và khởi chạy lệnh sau:</p>
+        <div style="background: #09090f; border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #a7f3d0; margin-top: 6px; white-space: pre-wrap; word-break: break-all;">node server.js com.app.live.tv.score.pro</div>
+      </div>
+
+      <div>
+        <strong>Bước 4: Sử dụng & Kết nối</strong>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Điện thoại Android kết nối qua USB (bật Gỡ lỗi USB). Nhập địa chỉ URL của server vào ô cấu hình để bắt đầu sử dụng.</p>
+      </div>
+    </div>
+
+    <button onclick="toggleGuideModal(false)" class="btn btn-primary" style="margin-top: 24px; width: 100%; padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-weight: 600; cursor: pointer;">Đã Hiểu</button>
+  </div>
+</div>
 
 </body>
 </html>

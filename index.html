@@ -303,14 +303,20 @@
     <input type="text" id="package-input" value="com.app.live.tv.score.pro" placeholder="Nhập package name ứng dụng...">
   </div>
 
-  <div class="section-title">Trạng thái kết nối</div>
+  <!-- Mode Selector -->
+  <div class="mode-container" style="display: flex; background: rgba(10, 10, 18, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.05);">
+    <button id="mode-usb-btn" onclick="switchMode('usb')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: none; border-radius: 9px; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-family: inherit;">🔌 WebUSB Mode (Default)</button>
+    <button id="mode-server-btn" onclick="switchMode('server')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: none; border-radius: 9px; cursor: pointer; transition: all 0.2s; background: transparent; color: #94a3b8; font-family: inherit;">🖥️ Local Server Mode</button>
+  </div>
+
+  <div class="section-title" id="conn-title">Trạng thái kết nối</div>
   <div class="status-card">
     <div class="status-row">
-      <span>Điện thoại cắm USB</span>
+      <span id="label-usb">Điện thoại cắm USB</span>
       <span id="usb-badge" class="badge disconnected">Chưa kết nối</span>
     </div>
     <div class="status-row">
-      <span>Trạng thái ADB</span>
+      <span id="label-adb">Trạng thái ADB</span>
       <span id="adb-badge" class="badge disconnected">Chưa thiết lập</span>
     </div>
   </div>
@@ -355,19 +361,37 @@
   const adbBadge = document.getElementById('adb-badge');
   const btnConnect = document.getElementById('btn-connect');
   const btnDisconnect = document.getElementById('btn-disconnect');
+  const btnKillServer = document.getElementById('btn-kill-server');
   const btnOn = document.getElementById('btn-on');
   const btnOff = document.getElementById('btn-off');
   const consoleOutput = document.getElementById('console-output');
   const packageInput = document.getElementById('package-input');
 
-  // ADB Global Instances
+  const modeUsbBtn = document.getElementById('mode-usb-btn');
+  const modeServerBtn = document.getElementById('mode-server-btn');
+  const labelUsb = document.getElementById('label-usb');
+  const labelAdb = document.getElementById('label-adb');
+
+  // Global States
+  let activeMode = 'usb'; // 'usb' hoặc 'server'
   let webusbInstance = null;
   let adbInstance = null;
+  let serverStatusInterval = null;
 
   // Check browser support
   if (!navigator.usb) {
     document.getElementById('browser-warning').style.display = 'block';
     btnConnect.disabled = true;
+  }
+
+  // Override WebUSB filters to show all USB devices in browser selection
+  if (window.Adb && Adb.WebUSB && Adb.WebUSB.Transport) {
+    Adb.WebUSB.Transport.open = function() {
+      log("Đang mở danh sách quét cổng USB... Vui lòng chọn điện thoại Android của bạn.");
+      return navigator.usb.requestDevice({ filters: [] })
+        .then(device => device.open()
+          .then(() => new Adb.WebUSB.Transport(device)));
+    };
   }
 
   function log(msg, type = 'info') {
@@ -387,7 +411,162 @@
     consoleOutput.textContent = 'Đã xóa lịch sử log...';
   }
 
-  // Helper to execute command and get output
+  // Switch between WebUSB and Localhost Server Mode
+  function switchMode(mode) {
+    activeMode = mode;
+    if (mode === 'usb') {
+      // Style active button
+      modeUsbBtn.style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+      modeUsbBtn.style.color = '#fff';
+      modeServerBtn.style.background = 'transparent';
+      modeServerBtn.style.color = '#94a3b8';
+
+      // Update Labels
+      labelUsb.textContent = 'Điện thoại cắm USB';
+      labelAdb.textContent = 'Trạng thái ADB';
+
+      // Control visibility
+      btnConnect.style.display = 'flex';
+      btnDisconnect.style.display = 'flex';
+      btnKillServer.style.display = 'flex';
+
+      // Stop server checker
+      stopServerChecking();
+      
+      // Reset WebUSB UI states
+      resetUsbUI();
+      log("Đã chuyển sang chế độ WebUSB Mode (Không cài đặt).");
+    } else {
+      // Style active button
+      modeServerBtn.style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+      modeServerBtn.style.color = '#fff';
+      modeUsbBtn.style.background = 'transparent';
+      modeUsbBtn.style.color = '#94a3b8';
+
+      // Update Labels
+      labelUsb.textContent = 'Trạng thái Server:';
+      labelAdb.textContent = 'Thiết bị ADB:';
+
+      // Control visibility
+      btnConnect.style.display = 'none';
+      btnDisconnect.style.display = 'none';
+      btnKillServer.style.display = 'none';
+
+      // Disconnect WebUSB if active
+      disconnectWebUsb();
+
+      log("Đã chuyển sang chế độ Local Server Mode (http://localhost:3456).");
+      // Start server status checker
+      startServerChecking();
+    }
+  }
+
+  // Reset USB UI
+  function resetUsbUI() {
+    usbBadge.textContent = 'Chưa kết nối';
+    usbBadge.className = 'badge disconnected';
+    adbBadge.textContent = 'Chưa thiết lập';
+    adbBadge.className = 'badge disconnected';
+    btnConnect.disabled = false;
+    btnConnect.innerHTML = '🔌 Kết Nối';
+    btnDisconnect.disabled = true;
+    btnOn.disabled = true;
+    btnOff.disabled = true;
+  }
+
+  // Disconnect WebUSB
+  async function disconnectWebUsb() {
+    try {
+      if (webusbInstance) {
+        log("Đang ngắt kết nối và giải phóng cổng USB thiết bị...");
+        await webusbInstance.close();
+      }
+    } catch (e) {
+      log("Lỗi khi ngắt kết nối USB: " + e.message, "error");
+    } finally {
+      webusbInstance = null;
+      adbInstance = null;
+    }
+  }
+
+  // ==========================================
+  // 🖥️ SERVER MODE LOGIC (Uses Local Node Server)
+  // ==========================================
+  async function checkServerStatus() {
+    const PKG = packageInput.value.trim();
+    try {
+      const res = await fetch(`http://localhost:3456/api/status?packageName=${PKG}`);
+      const data = await res.json();
+      
+      usbBadge.textContent = 'Server Online';
+      usbBadge.className = 'badge connected';
+      
+      if (data.devices.length > 0) {
+        adbBadge.textContent = `${data.devices[0]} (${data.organic === 'true' ? 'Ẩn QC' : data.organic === 'false' ? 'Hiện QC' : 'Chưa rõ'})`;
+        adbBadge.className = 'badge connected';
+        btnOn.disabled = false;
+        btnOff.disabled = false;
+      } else {
+        adbBadge.textContent = 'Không có thiết bị cắm PC';
+        adbBadge.className = 'badge disconnected';
+        btnOn.disabled = true;
+        btnOff.disabled = true;
+      }
+    } catch (e) {
+      usbBadge.textContent = 'Server Offline';
+      usbBadge.className = 'badge disconnected';
+      adbBadge.textContent = 'Chưa kết nối';
+      adbBadge.className = 'badge disconnected';
+      btnOn.disabled = true;
+      btnOff.disabled = true;
+    }
+  }
+
+  function startServerChecking() {
+    if (serverStatusInterval) clearInterval(serverStatusInterval);
+    checkServerStatus();
+    serverStatusInterval = setInterval(checkServerStatus, 3000);
+  }
+
+  function stopServerChecking() {
+    if (serverStatusInterval) {
+      clearInterval(serverStatusInterval);
+      serverStatusInterval = null;
+    }
+  }
+
+  async function setOrganicViaServer(value) {
+    const PKG = packageInput.value.trim();
+    if (!PKG) {
+      log("Vui lòng nhập Package Name!", "error");
+      return;
+    }
+    
+    // Disable buttons
+    btnOn.disabled = true;
+    btnOff.disabled = true;
+    
+    log(`[Server] Đang thiết lập KEY_IS_ORGANIC = ${value} cho Package: ${PKG}...`);
+    try {
+      const res = await fetch(`http://localhost:3456/api/set?organic=${value}&packageName=${PKG}`);
+      const data = await res.json();
+      if (data.success) {
+        log(`[Server] Đã thay đổi thành công! Phản hồi: ${data.organic}`, 'success');
+      } else {
+        log(`[Server] Gặp lỗi: ${data.error}`, 'error');
+      }
+    } catch (e) {
+      log(`[Server] Lỗi kết nối server: ${e.message}`, 'error');
+    } finally {
+      btnOn.disabled = false;
+      btnOff.disabled = false;
+      checkServerStatus();
+    }
+  }
+
+  // ==========================================
+  // 🔌 WEBUSB MODE LOGIC (Direct browser USB)
+  // ==========================================
   async function runAdbCommand(adb, cmd) {
     log(cmd, 'cmd');
     let shell = await adb.shell(cmd);
@@ -472,29 +651,9 @@
 
   // Disconnect WebUSB device
   async function disconnectDevice() {
-    try {
-      if (webusbInstance) {
-        log("Đang ngắt kết nối và giải phóng cổng USB thiết bị...");
-        await webusbInstance.close();
-      }
-    } catch (e) {
-      log("Lỗi khi ngắt kết nối: " + e.message, "error");
-    } finally {
-      webusbInstance = null;
-      adbInstance = null;
-      
-      usbBadge.textContent = 'Chưa kết nối';
-      usbBadge.className = 'badge disconnected';
-      adbBadge.textContent = 'Chưa thiết lập';
-      adbBadge.className = 'badge disconnected';
-      
-      btnConnect.disabled = false;
-      btnConnect.innerHTML = '🔌 Kết Nối';
-      btnDisconnect.disabled = true;
-      btnOn.disabled = true;
-      btnOff.disabled = true;
-      log("Đã ngắt kết nối thành công. Thiết bị USB đã được giải phóng!", "success");
-    }
+    await disconnectWebUsb();
+    resetUsbUI();
+    log("Đã ngắt kết nối thành công. Thiết bị USB đã được giải phóng!", "success");
   }
 
   // Request server to run adb kill-server
@@ -506,7 +665,7 @@
     log("Gửi yêu cầu tắt tiến trình ADB Server chạy ngầm trên PC...");
     
     try {
-      const res = await fetch('/api/kill-server');
+      const res = await fetch('http://localhost:3456/api/kill-server');
       const data = await res.json();
       if (data.success) {
         log("Đã chạy lệnh 'adb kill-server' thành công trên máy tính! Cổng USB thiết bị đã được giải phóng.", "success");
@@ -514,15 +673,24 @@
         log("Lỗi phản hồi từ PC Server: " + data.error, "error");
       }
     } catch (e) {
-      log("Không thể kết nối đến server Node.js. (Lưu ý: Tính năng tắt ADB PC chỉ chạy được khi trang này được mở dưới localhost:3456)", "error");
+      log("Không thể kết nối đến server Node.js. (Lưu ý: Tính năng tắt ADB PC chỉ chạy được khi server Node.js localhost:3456 đang chạy)", "error");
     } finally {
       btnKill.disabled = false;
       btnKill.textContent = '💀 Tắt ADB PC (Giải Phóng Thiết Bị)';
     }
   }
 
-  // Set Key
+  // Set Organic entry point
   async function setOrganic(value) {
+    if (activeMode === 'server') {
+      await setOrganicViaServer(value);
+    } else {
+      await setOrganicViaWebUsb(value);
+    }
+  }
+
+  // Set Organic WebUSB action
+  async function setOrganicViaWebUsb(value) {
     if (!adbInstance) {
       log("Không tìm thấy kết nối ADB. Vui lòng kết nối lại!", "error");
       return;
@@ -535,7 +703,6 @@
     }
 
     const targetBtn = value ? btnOff : btnOn;
-    const originalText = targetBtn.textContent;
     
     // Disable buttons
     btnOn.disabled = true;
@@ -554,7 +721,7 @@
       const xml = `<map><boolean name="KEY_IS_ORGANIC" value="${value}" /></map>`;
       const PREF_PATH = `/data/data/${PKG}/shared_prefs/nkh_ad_pref.xml`;
       
-      // Executing command in run-as mode (with mkdir -p to support freshly installed apps)
+      // Executing command in run-as mode
       const adbWriteCmd = `run-as ${PKG} sh -c 'mkdir -p /data/data/${PKG}/shared_prefs && echo "${xml.replace(/"/g, '\\"')}" > ${PREF_PATH}'`;
       const outputWrite = await runAdbCommand(adbInstance, adbWriteCmd);
       if (outputWrite) {
@@ -585,6 +752,9 @@
       btnOff.innerHTML = '🔴 Ẩn QC (true)';
     }
   }
+
+  // Initialize page in WebUSB Mode by default
+  switchMode('usb');
 </script>
 
 </body>

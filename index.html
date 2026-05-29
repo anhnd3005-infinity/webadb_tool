@@ -890,32 +890,43 @@
 
 <!-- Modal Hướng Dẫn Cài Đặt -->
 <div id="guide-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 18, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-  <div style="background: #161626; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; width: 100%; max-width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; position: relative; color: #e2e8f0; font-family: sans-serif;">
+  <div style="background: #161626; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 30px; width: 100%; max-width: 540px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; position: relative; color: #e2e8f0; font-family: sans-serif;">
     <button onclick="toggleGuideModal(false)" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: all 0.2s;">✕</button>
     
-    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🖥️ Hướng dẫn cài đặt Local Server</h2>
+    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 18px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🖥️ Hướng dẫn Setup & Điều khiển nhanh</h2>
     
-    <div style="font-size: 14px; line-height: 1.6; color: #cbd5e1; display: flex; flex-direction: column; gap: 16px;">
+    <div style="font-size: 14px; line-height: 1.6; color: #cbd5e1; display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Option 1: Node.js server -->
       <div>
-        <strong>Bước 1: Cài đặt Node.js & ADB</strong>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Máy tính chạy server cần cài sẵn Node.js (tải từ <a href="https://nodejs.org/" target="_blank" style="color: #818cf8;">nodejs.org</a>) và Android SDK/ADB.</p>
+        <div style="font-weight: 600; color: #818cf8; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Cách 1: Chạy Local Node.js Server</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">
+          1. Máy tính cần cài sẵn <strong>Node.js</strong> và <strong>ADB</strong>.<br>
+          2. <a href="./server.js" download style="color: #818cf8; text-decoration: underline; font-weight: 500;">Tải file server.js</a> và lưu vào máy.<br>
+          3. Mở Terminal tại thư mục đó và chạy:<br>
+          <code style="display: block; background: #09090f; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 11px; color: #a7f3d0; margin-top: 4px; border: 1px solid rgba(255,255,255,0.03); white-space: pre-wrap; word-break: break-all;">node server.js com.app.live.tv.score.pro</code>
+          4. Nhập IP máy tính của bạn vào ô <strong>Local Server URL</strong> trên trình duyệt.
+        </p>
       </div>
 
+      <!-- Option 2: Direct ADB CLI command -->
       <div>
-        <strong>Bước 2: Tải file server</strong>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Tải script <a href="./server.js" download style="color: #818cf8; text-decoration: underline;">server.js</a> về máy tính và lưu vào một thư mục.</p>
+        <div style="font-weight: 600; color: #f59e0b; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Cách 2: Chạy trực tiếp từ ADB Terminal (Siêu nhanh ⚡)</div>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 8px;">
+          Nếu máy tính của bạn đã cài sẵn <strong>ADB Command-line tools</strong>, bạn chỉ cần copy-paste trực tiếp một trong hai lệnh sau vào Terminal để chạy cực nhanh (không cần mở server hay trình duyệt):
+        </p>
+        
+        <div style="margin-top: 10px;">
+          <span style="font-size: 11px; font-weight: 600; color: #34d399; display: block; margin-bottom: 2px;">🟢 Hiện quảng cáo (KEY_IS_ORGANIC = false):</span>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"false\\\" /&gt;&lt;/map&gt;\" &gt; /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <span style="font-size: 11px; font-weight: 600; color: #f87171; display: block; margin-bottom: 2px;">🔴 Ẩn quảng cáo (KEY_IS_ORGANIC = true):</span>
+          <textarea readonly onclick="this.select()" style="width: 100%; height: 75px; background: #09090f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; color: #cbd5e1; font-family: monospace; font-size: 10px; padding: 6px; resize: none; outline: none; cursor: pointer;">adb shell "run-as com.app.live.tv.score.pro sh -c 'mkdir -p /data/data/com.app.live.tv.score.pro/shared_prefs && echo \"&lt;map&gt;&lt;boolean name=\\\"KEY_IS_ORGANIC\\\" value=\\\"true\\\" /&gt;&lt;/map&gt;\" &gt; /data/data/com.app.live.tv.score.pro/shared_prefs/nkh_ad_pref.xml'" && adb shell am force-stop com.app.live.tv.score.pro && adb shell am start -n com.app.live.tv.score.pro/com.app.live.tv.score.pro.ui.component.splash.SplashActivity</textarea>
+        </div>
       </div>
 
-      <div>
-        <strong>Bước 3: Khởi động server</strong>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Mở Terminal (hoặc CMD) tại thư mục chứa file `server.js` và khởi chạy lệnh sau:</p>
-        <div style="background: #09090f; border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #a7f3d0; margin-top: 6px; white-space: pre-wrap; word-break: break-all;">node server.js com.app.live.tv.score.pro</div>
-      </div>
-
-      <div>
-        <strong>Bước 4: Sử dụng & Kết nối</strong>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Điện thoại Android kết nối qua USB (bật Gỡ lỗi USB). Nhập địa chỉ URL của server vào ô cấu hình để bắt đầu sử dụng.</p>
-      </div>
     </div>
 
     <button onclick="toggleGuideModal(false)" class="btn btn-primary" style="margin-top: 24px; width: 100%; padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-weight: 600; cursor: pointer;">Đã Hiểu</button>
